@@ -25,6 +25,9 @@ export async function history(): Promise<void> {
       i++;
     } else if (args[i] === "--as" && args[i + 1]) {
       i++;
+    } else if (!args[i].startsWith("--") && !channelName) {
+      // Positional arg: treat first bare word as channel name
+      channelName = args[i];
     }
   }
 

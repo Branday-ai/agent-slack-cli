@@ -9,7 +9,7 @@ const COMMANDS: Record<string, { desc: string; usage: string }> = {
   react:   { desc: "Add/remove a reaction",     usage: "slack react <ts> <emoji> [--channel <name>] [--remove] [--as <agent>]" },
   upload:  { desc: "Upload a file",             usage: "slack upload <filepath> [--message <text>] [--channel <name>] [--as <agent>]" },
   search:  { desc: "Search message history",    usage: "slack search <query> [--limit N] [--channel <name>]" },
-  history: { desc: "Show recent messages",      usage: "slack history [--limit N] [--channel <name>]" },
+  history: { desc: "Show recent messages",      usage: "slack history <channel> [--limit N] [--as <agent>]" },
   check:   { desc: "Fetch new messages",        usage: "slack check" },
 };
 
