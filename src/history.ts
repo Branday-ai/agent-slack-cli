@@ -76,6 +76,21 @@ export async function history(): Promise<void> {
 
       console.log(`[${timeStr}] ${user}:`);
       console.log(`  ${text}`);
+
+      // Show file attachments if present
+      if ((msg as any).files && Array.isArray((msg as any).files)) {
+        for (const file of (msg as any).files) {
+          const name = file.name || "unnamed";
+          const mimetype = file.mimetype || "unknown";
+          const url = file.url_private || file.permalink || "";
+          if (mimetype.startsWith("image/")) {
+            console.log(`  [Image: ${name}] ${url}`);
+          } else {
+            console.log(`  [File: ${name} (${mimetype})] ${url}`);
+          }
+        }
+      }
+
       console.log(`  ts: ${msg.ts}`);
       console.log("");
     }
