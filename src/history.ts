@@ -5,6 +5,8 @@ import {
   getPostingToken,
   resolveAgent,
   resolveChannel,
+  resolveDmChannel,
+  ChannelConfig,
 } from "./config.js";
 import { resolveMessageAuthor } from "./format.js";
 
@@ -42,7 +44,19 @@ export async function history(): Promise<void> {
   }
 
   const client = new WebClient(token);
-  const targetChannel = resolveChannel(channelName);
+
+  // Resolve channel — support @username for DMs
+  let targetChannel: ChannelConfig;
+  if (channelName?.startsWith("@")) {
+    try {
+      targetChannel = resolveDmChannel(channelName.slice(1));
+    } catch (error: any) {
+      console.error("Error:", error.message);
+      process.exit(1);
+    }
+  } else {
+    targetChannel = resolveChannel(channelName);
+  }
 
   try {
     const result = await client.conversations.history({
@@ -51,14 +65,16 @@ export async function history(): Promise<void> {
     });
 
     if (!result.ok || !result.messages || result.messages.length === 0) {
-      console.log(`No messages found in #${targetChannel.name}.`);
+      const emptyLabel = targetChannel.name.startsWith("@") ? targetChannel.name : `#${targetChannel.name}`;
+      console.log(`No messages found in ${emptyLabel}.`);
       return;
     }
 
     // Reverse so oldest is first (chronological order)
     const messages = result.messages.reverse();
 
-    console.log(`Last ${messages.length} message(s) in #${targetChannel.name}:\n`);
+    const label = targetChannel.name.startsWith("@") ? targetChannel.name : `#${targetChannel.name}`;
+    console.log(`Last ${messages.length} message(s) in ${label}:\n`);
 
     for (const msg of messages) {
       const ts = parseFloat(msg.ts || "0");

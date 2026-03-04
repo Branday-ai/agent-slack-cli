@@ -5,6 +5,7 @@ import {
   getPostingToken,
   resolveAgent,
   resolveChannel,
+  resolveDmChannel,
 } from "./config.js";
 import { formatForSlack } from "./format.js";
 import { readFileSync } from "fs";
@@ -107,6 +108,16 @@ export async function reply(): Promise<void> {
     // Direct channel ID override
     targetChannelId = channelId;
     targetChannelName = channelId;
+  } else if (channelName?.startsWith("@")) {
+    // DM by @username
+    try {
+      const resolved = resolveDmChannel(channelName.slice(1));
+      targetChannelId = resolved.id;
+      targetChannelName = resolved.name;
+    } catch (error: any) {
+      console.error("Error:", error.message);
+      process.exit(1);
+    }
   } else {
     const resolved = resolveChannel(channelName);
     targetChannelId = resolved.id;

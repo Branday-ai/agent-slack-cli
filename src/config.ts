@@ -33,6 +33,7 @@ function parseAgentTokens(): Record<string, string> {
 export const slackConfig = {
   botToken: process.env.SLACK_BOT_TOKEN || "",
   channels: parseChannels(process.env.SLACK_CHANNELS || ""),
+  dms: parseChannels(process.env.SLACK_DMS || ""),
   defaultChannel: process.env.SLACK_DEFAULT_CHANNEL || "",
   // Legacy single channel support
   channelId: process.env.SLACK_CHANNEL_ID || "",
@@ -107,8 +108,14 @@ export function resolveAgent(args: string[]): string | undefined {
 
 /**
  * Resolve target channel from --channel arg or default.
+ * Also accepts raw Slack channel IDs (C*, D*, G*).
  */
 export function resolveChannel(channelName?: string): ChannelConfig {
+  // Raw channel ID passthrough (e.g., D06XXXXXX, C06XXXXXX)
+  if (channelName && /^[CDG][A-Z0-9]+$/.test(channelName)) {
+    return { name: channelName, id: channelName };
+  }
+
   let targetChannel = channelName
     ? getChannelByName(channelName)
     : getDefaultChannel();
@@ -125,4 +132,31 @@ export function resolveChannel(channelName?: string): ChannelConfig {
   }
 
   return targetChannel;
+}
+
+/**
+ * Resolve a @username to a DM channel.
+ *
+ * Looks up the name in SLACK_DMS env var (format: "name:DchannelId,...").
+ * Also accepts raw DM channel IDs (@D06XXXXXX).
+ */
+export function resolveDmChannel(username: string): ChannelConfig {
+  // Raw DM channel ID passthrough (@D06XXXXXX)
+  if (/^D[A-Z0-9]+$/.test(username)) {
+    return { name: `@${username}`, id: username };
+  }
+
+  // Look up in configured DMs
+  const nameLower = username.toLowerCase();
+  const dm = slackConfig.dms.find((d) => d.name.toLowerCase() === nameLower);
+  if (dm) {
+    return { name: `@${dm.name}`, id: dm.id };
+  }
+
+  const available = slackConfig.dms.map((d) => d.name).join(", ");
+  throw new Error(
+    `DM "${username}" not found. ` +
+    (available ? `Available: ${available}. ` : "") +
+    `Configure SLACK_DMS in .env (format: name:DchannelId,...) or pass a raw DM channel ID: @D06XXXXXX`
+  );
 }
