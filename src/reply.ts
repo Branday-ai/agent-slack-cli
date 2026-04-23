@@ -51,30 +51,39 @@ export async function reply(): Promise<void> {
     process.exit(1);
   }
 
-  let message = "";
+  let message: string | undefined;
   let threadTs: string | undefined;
   let channelName: string | undefined;
   let channelId: string | undefined;
   let useStdin = false;
 
-  // Parse all args except --as (handled by resolveAgent)
-  const filteredArgs: string[] = [];
+  const THREAD_FLAGS = new Set(["--thread", "--thread-ts", "--thread_ts"]);
+
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--thread" && args[i + 1]) {
+    const arg = args[i];
+    if (THREAD_FLAGS.has(arg) && args[i + 1]) {
       threadTs = args[i + 1];
       i++;
-    } else if (args[i] === "--channel" && args[i + 1]) {
+    } else if (arg === "--channel" && args[i + 1]) {
       channelName = args[i + 1];
       i++;
-    } else if (args[i] === "--channel-id" && args[i + 1]) {
+    } else if (arg === "--channel-id" && args[i + 1]) {
       channelId = args[i + 1];
       i++;
-    } else if (args[i] === "--as" && args[i + 1]) {
+    } else if (arg === "--as" && args[i + 1]) {
       i++; // Skip the value, handled by resolveAgent
-    } else if (args[i] === "--stdin") {
+    } else if (arg === "--stdin") {
       useStdin = true;
+    } else if (arg.startsWith("--")) {
+      console.error(`Error: Unknown flag: ${arg}`);
+      console.error(`Known flags: --thread, --channel, --channel-id, --as, --stdin`);
+      process.exit(1);
+    } else if (message !== undefined) {
+      console.error(`Error: Multiple positional arguments. First message: ${JSON.stringify(message)}, second: ${JSON.stringify(arg)}`);
+      console.error(`Did you forget quotes around the message, or use an unknown flag that swallowed its value?`);
+      process.exit(1);
     } else {
-      message = args[i];
+      message = arg;
     }
   }
 
